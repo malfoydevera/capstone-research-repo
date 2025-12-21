@@ -1,14 +1,16 @@
 const supabase = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 
-// Submit new research
+// Submit new research or update existing revision
 exports.submitResearch = async (req, res) => {
   try {
-    const { title, abstract, keywords, coAuthors, category } = req.body;
+    // 1. Capture 'id' from req.body to detect if this is an update/revision
+    const { id, title, abstract, keywords, coAuthors, category } = req.body;
     const file = req.file;
     const userId = req.user.id;
 
-    if (!file) {
+    // Validation: File is required for new submissions
+    if (!id && !file) {
       return res.status(400).json({ error: 'Research file is required' });
     }
 
@@ -16,60 +18,66 @@ exports.submitResearch = async (req, res) => {
       return res.status(400).json({ error: 'All required fields must be filled' });
     }
 
-    // Upload file to Supabase Storage
-    const fileExt = file.originalname.split('.').pop();
-    const fileName = `${userId}/${uuidv4()}.${fileExt}`;
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('research-papers')
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false
-      });
+    let fileData = {};
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return res.status(500).json({ error: 'Failed to upload file' });
+    // 2. Upload new file if one was provided
+    if (file) {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${userId}/${uuidv4()}.${fileExt}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('research-papers')
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true // Allow overwriting if a specific path is reused
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload file' });
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('research-papers')
+        .getPublicUrl(fileName);
+
+      fileData = {
+        file_url: publicUrl,
+        file_name: file.originalname,
+        file_size: file.size
+      };
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('research-papers')
-      .getPublicUrl(fileName);
-
-    // Insert research record
+    // 3. Use .upsert() to update existing record or insert new one
+    // If 'id' is present, Supabase updates that record; otherwise it inserts
     const { data: research, error: dbError } = await supabase
       .from('research_papers')
-      .insert([{
+      .upsert({
+        ...(id && { id }), // Include id only if it's an update
         title,
         abstract,
         keywords: keywords ? keywords.split(',').map(k => k.trim()) : [],
         co_authors: coAuthors || null,
         category,
         author_id: userId,
-        file_url: publicUrl,
-        file_name: file.originalname,
-        file_size: file.size,
-        status: 'pending'
-      }])
+        status: 'pending', // Reset status to pending upon submission/revision
+        ...fileData // Spread new file info if a file was uploaded
+      })
       .select()
       .single();
 
     if (dbError) {
       console.error('Database error:', dbError);
-      // Delete uploaded file if database insert fails
-      await supabase.storage.from('research-papers').remove([fileName]);
       return res.status(500).json({ error: 'Failed to save research data' });
     }
 
-    // Get author details
+    // 4. Notification logic (consistent with original)
     const { data: author } = await supabase
       .from('users')
       .select('full_name, email')
       .eq('id', userId)
       .single();
 
-    // Create notifications for all staff
     const { data: staffUsers } = await supabase
       .from('users')
       .select('id')
@@ -80,15 +88,15 @@ exports.submitResearch = async (req, res) => {
         user_id: staff.id,
         research_id: research.id,
         type: 'submission',
-        title: 'New Research Submission',
-        message: `${author?.full_name || author?.email} submitted "${title}" for review`
+        title: id ? 'Research Revised' : 'New Research Submission',
+        message: `${author?.full_name || author?.email} ${id ? 'resubmitted' : 'submitted'} "${title}" for review`
       }));
 
       await supabase.from('notifications').insert(notifications);
     }
 
-    res.status(201).json({
-      message: 'Research submitted successfully',
+    res.status(id ? 200 : 201).json({
+      message: id ? 'Research updated successfully' : 'Research submitted successfully',
       research
     });
   } catch (error) {
@@ -142,7 +150,6 @@ exports.getAllResearch = async (req, res) => {
 
     if (error) throw error;
 
-    // Transform the data to match expected format
     const transformedPapers = papers.map(paper => ({
       ...paper,
       users: paper.author
@@ -177,13 +184,11 @@ exports.getResearchById = async (req, res) => {
       return res.status(404).json({ error: 'Research paper not found' });
     }
 
-    // Increment view count
     await supabase
       .from('research_papers')
-      .update({ view_count: paper.view_count + 1 })
+      .update({ view_count: (paper.view_count || 0) + 1 })
       .eq('id', id);
 
-    // Transform the data to match expected format
     const transformedPaper = {
       ...paper,
       users: paper.author
@@ -196,7 +201,7 @@ exports.getResearchById = async (req, res) => {
   }
 };
 
-// Approve research (Staff: pending -> under_review, Admin: under_review -> approved)
+// Approve research
 exports.approveResearch = async (req, res) => {
   try {
     const { id } = req.params;
@@ -204,7 +209,6 @@ exports.approveResearch = async (req, res) => {
     const reviewerId = req.user.id;
     const reviewerRole = req.user.role;
 
-    // Get current research status
     const { data: paper, error: fetchError } = await supabase
       .from('research_papers')
       .select('*, users:author_id(full_name, email)')
@@ -228,7 +232,6 @@ exports.approveResearch = async (req, res) => {
       return res.status(400).json({ error: 'Invalid approval workflow' });
     }
 
-    // Update research status
     const { error: updateError } = await supabase
       .from('research_papers')
       .update({ 
@@ -239,7 +242,6 @@ exports.approveResearch = async (req, res) => {
 
     if (updateError) throw updateError;
 
-    // Record approval
     await supabase.from('approval_workflow').insert([{
       research_id: id,
       reviewer_id: reviewerId,
@@ -248,7 +250,6 @@ exports.approveResearch = async (req, res) => {
       comments: comments || null
     }]);
 
-    // Notify author
     await supabase.from('notifications').insert([{
       user_id: paper.author_id,
       research_id: id,
@@ -257,13 +258,8 @@ exports.approveResearch = async (req, res) => {
       message: notificationMessage
     }]);
 
-    // If staff approved, notify all admins
     if (newStatus === 'under_review') {
-      const { data: admins } = await supabase
-        .from('users')
-        .select('id')
-        .eq('role', 'admin');
-
+      const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
       if (admins && admins.length > 0) {
         const adminNotifications = admins.map(admin => ({
           user_id: admin.id,
@@ -272,7 +268,6 @@ exports.approveResearch = async (req, res) => {
           title: 'Research Ready for Final Approval',
           message: `"${paper.title}" has been reviewed by staff and needs your approval`
         }));
-
         await supabase.from('notifications').insert(adminNotifications);
       }
     }
@@ -292,46 +287,19 @@ exports.rejectResearch = async (req, res) => {
     const reviewerId = req.user.id;
     const reviewerRole = req.user.role;
 
-    if (!reason) {
-      return res.status(400).json({ error: 'Rejection reason is required' });
-    }
+    if (!reason) return res.status(400).json({ error: 'Rejection reason is required' });
 
-    // Get research paper
-    const { data: paper } = await supabase
-      .from('research_papers')
-      .select('author_id, title')
-      .eq('id', id)
-      .single();
+    const { data: paper } = await supabase.from('research_papers').select('author_id, title').eq('id', id).single();
+    if (!paper) return res.status(404).json({ error: 'Research paper not found' });
 
-    if (!paper) {
-      return res.status(404).json({ error: 'Research paper not found' });
-    }
+    await supabase.from('research_papers').update({ status: 'rejected', rejection_reason: reason }).eq('id', id);
 
-    // Update research status
-    await supabase
-      .from('research_papers')
-      .update({ 
-        status: 'rejected',
-        rejection_reason: reason
-      })
-      .eq('id', id);
-
-    // Record rejection
     await supabase.from('approval_workflow').insert([{
-      research_id: id,
-      reviewer_id: reviewerId,
-      reviewer_role: reviewerRole,
-      status: 'rejected',
-      comments: reason
+      research_id: id, reviewer_id: reviewerId, reviewer_role: reviewerRole, status: 'rejected', comments: reason
     }]);
 
-    // Notify author
     await supabase.from('notifications').insert([{
-      user_id: paper.author_id,
-      research_id: id,
-      type: 'rejection',
-      title: 'Research Rejected',
-      message: `Your research "${paper.title}" has been rejected. Reason: ${reason}`
+      user_id: paper.author_id, research_id: id, type: 'rejection', title: 'Research Rejected', message: `Your research "${paper.title}" has been rejected. Reason: ${reason}`
     }]);
 
     res.json({ message: 'Research rejected' });
@@ -349,46 +317,19 @@ exports.requestRevision = async (req, res) => {
     const reviewerId = req.user.id;
     const reviewerRole = req.user.role;
 
-    if (!notes) {
-      return res.status(400).json({ error: 'Revision notes are required' });
-    }
+    if (!notes) return res.status(400).json({ error: 'Revision notes are required' });
 
-    // Get research paper
-    const { data: paper } = await supabase
-      .from('research_papers')
-      .select('author_id, title')
-      .eq('id', id)
-      .single();
+    const { data: paper } = await supabase.from('research_papers').select('author_id, title').eq('id', id).single();
+    if (!paper) return res.status(404).json({ error: 'Research paper not found' });
 
-    if (!paper) {
-      return res.status(404).json({ error: 'Research paper not found' });
-    }
+    await supabase.from('research_papers').update({ status: 'revision_required', revision_notes: notes }).eq('id', id);
 
-    // Update research status
-    await supabase
-      .from('research_papers')
-      .update({ 
-        status: 'revision_required',
-        revision_notes: notes
-      })
-      .eq('id', id);
-
-    // Record revision request
     await supabase.from('approval_workflow').insert([{
-      research_id: id,
-      reviewer_id: reviewerId,
-      reviewer_role: reviewerRole,
-      status: 'revision_required',
-      comments: notes
+      research_id: id, reviewer_id: reviewerId, reviewer_role: reviewerRole, status: 'revision_required', comments: notes
     }]);
 
-    // Notify author
     await supabase.from('notifications').insert([{
-      user_id: paper.author_id,
-      research_id: id,
-      type: 'revision',
-      title: 'Revision Required',
-      message: `Your research "${paper.title}" requires revision. Notes: ${notes}`
+      user_id: paper.author_id, research_id: id, type: 'revision', title: 'Revision Required', message: `Your research "${paper.title}" requires revision. Notes: ${notes}`
     }]);
 
     res.json({ message: 'Revision requested' });
@@ -402,38 +343,15 @@ exports.requestRevision = async (req, res) => {
 exports.getPublishedResearch = async (req, res) => {
   try {
     const { category, search } = req.query;
+    let query = supabase.from('research_papers').select(`*, author:users!author_id (id, full_name, email)`).eq('status', 'approved').order('published_date', { ascending: false });
 
-    let query = supabase
-      .from('research_papers')
-      .select(`
-        *,
-        author:users!author_id (
-          id,
-          full_name,
-          email
-        )
-      `)
-      .eq('status', 'approved')
-      .order('published_date', { ascending: false });
-
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    if (search) {
-      query = query.or(`title.ilike.%${search}%,abstract.ilike.%${search}%`);
-    }
+    if (category) query = query.eq('category', category);
+    if (search) query = query.or(`title.ilike.%${search}%,abstract.ilike.%${search}%`);
 
     const { data: papers, error } = await query;
-
     if (error) throw error;
 
-    // Transform the data to match expected format
-    const transformedPapers = papers.map(paper => ({
-      ...paper,
-      users: paper.author
-    }));
-
+    const transformedPapers = papers.map(paper => ({ ...paper, users: paper.author }));
     res.json({ papers: transformedPapers });
   } catch (error) {
     console.error('Get published research error:', error);
@@ -444,13 +362,8 @@ exports.getPublishedResearch = async (req, res) => {
 // Get research categories
 exports.getCategories = async (req, res) => {
   try {
-    const { data: categories, error } = await supabase
-      .from('research_categories')
-      .select('*')
-      .order('name');
-
+    const { data: categories, error } = await supabase.from('research_categories').select('*').order('name');
     if (error) throw error;
-
     res.json({ categories });
   } catch (error) {
     console.error('Get categories error:', error);

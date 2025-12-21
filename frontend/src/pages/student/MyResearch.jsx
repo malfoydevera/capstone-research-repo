@@ -78,6 +78,7 @@ const MyResearch = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -158,7 +159,7 @@ const MyResearch = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock size={16} />
-                    <span>Submitted {formatDate(paper.submission_date)}</span>
+                    <span>Submitted {formatDate(paper.submission_date || paper.created_at)}</span>
                   </div>
                   {paper.published_date && (
                     <div className="flex items-center gap-2">
@@ -204,12 +205,14 @@ const MyResearch = () => {
                   >
                     View PDF
                   </a>
+                  
+                  {/* Resubmit button handles both Rejection and Revision Required */}
                   {(paper.status === 'rejected' || paper.status === 'revision_required') && (
                     <button
                       onClick={() => navigate('/student/submit', { state: { resubmit: paper } })}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                     >
-                      Resubmit
+                      {paper.status === 'revision_required' ? 'Edit & Resubmit' : 'Try Resubmitting'}
                     </button>
                   )}
                 </div>

@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { researchAPI } from '../../utils/api';
 
 const SubmitResearch = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Initialize location to access passed state
+  
+  // Check if we are in "Resubmit" mode by looking for data passed from MyResearch.jsx
+  const resubmitData = location.state?.resubmit; 
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [categories, setCategories] = useState([]);
   const [file, setFile] = useState(null);
+  
+  // Initialize formData with resubmitData if it exists
   const [formData, setFormData] = useState({
-    title: '',
-    abstract: '',
-    keywords: '',
-    coAuthors: '',
-    category: ''
+    title: resubmitData?.title || '',
+    abstract: resubmitData?.abstract || '',
+    keywords: resubmitData?.keywords?.join(', ') || '',
+    coAuthors: resubmitData?.co_authors || '',
+    category: resubmitData?.category || ''
   });
 
   useEffect(() => {
@@ -60,7 +67,9 @@ const SubmitResearch = () => {
     setError('');
     setSuccess(false);
 
-    if (!file) {
+    // If not resubmitting, a file is mandatory. 
+    // If resubmitting, you might allow them to keep the old file (optional based on preference).
+    if (!file && !resubmitData) {
       setError('Please upload a PDF file');
       return;
     }
@@ -74,7 +83,16 @@ const SubmitResearch = () => {
 
     try {
       const submitData = new FormData();
-      submitData.append('file', file);
+      
+      // MANDATORY: If resubmitting, append the ID so the backend knows to UPDATE
+      if (resubmitData?.id) {
+        submitData.append('id', resubmitData.id);
+      }
+
+      if (file) {
+        submitData.append('file', file);
+      }
+      
       submitData.append('title', formData.title);
       submitData.append('abstract', formData.abstract);
       submitData.append('keywords', formData.keywords);
@@ -101,9 +119,13 @@ const SubmitResearch = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Submit Research Paper</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {resubmitData ? 'Resubmit Research Revision' : 'Submit Research Paper'}
+        </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Upload your research paper for review and approval
+          {resubmitData 
+            ? `Updating: ${resubmitData.title}` 
+            : 'Upload your research paper for review and approval'}
         </p>
       </div>
 
@@ -131,7 +153,7 @@ const SubmitResearch = () => {
           {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Research Paper (PDF) <span className="text-red-500">*</span>
+              Research Paper (PDF) {resubmitData ? '(Optional if keeping current)' : <span className="text-red-500">*</span>}
             </label>
             
             {!file ? (
@@ -150,7 +172,9 @@ const SubmitResearch = () => {
                 ) : (
                   <>
                     <p className="text-gray-600 font-medium mb-1">
-                      Drag & drop your PDF here, or click to browse
+                      {resubmitData 
+                        ? 'Drag & drop a new PDF to replace the old one, or click to browse'
+                        : 'Drag & drop your PDF here, or click to browse'}
                     </p>
                     <p className="text-gray-500 text-sm">Maximum file size: 10MB</p>
                   </>
@@ -175,6 +199,11 @@ const SubmitResearch = () => {
                   <X size={20} className="text-gray-600" />
                 </button>
               </div>
+            )}
+            {resubmitData && !file && (
+              <p className="mt-2 text-xs text-gray-500 italic">
+                Current file: {resubmitData.file_name}
+              </p>
             )}
           </div>
 
@@ -282,7 +311,7 @@ const SubmitResearch = () => {
             disabled={loading}
             className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Submitting...' : 'Submit Research'}
+            {loading ? 'Submitting...' : resubmitData ? 'Update Research' : 'Submit Research'}
           </button>
         </div>
       </form>
