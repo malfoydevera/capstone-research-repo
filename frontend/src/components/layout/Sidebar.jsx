@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { researchAPI } from '../../utils/api'; // Import API
+import { researchAPI } from '../../utils/api';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -18,34 +18,62 @@ import {
   Bell,
   HelpCircle,
   User,
-  Shield
+  Shield,
+  Database,
+  Award,
+  TrendingUp,
+  FileCheck,
+  CheckCircle,
+  Clock,
+  Home,
+  Grid,
+  Library,
+  PenTool,
+  Search,
+  FolderOpen,
+  PieChart,
+  UserCog,
+  FileEdit,
+  Calendar,
+  Download,
+  Eye,
+  PlusCircle,
+  ExternalLink,
+  Sparkles,
+  BellDot,
+  ChevronRight,
+  MoreVertical,
+  Settings2,
+  GraduationCap
 } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [stats, setStats] = useState({ staffPending: 0, adminPending: 0 }); // State for badges
+  const [stats, setStats] = useState({ staffPending: 0, adminPending: 0 });
+  const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Only fetch stats if user is staff or admin
     if (user?.role === 'staff' || user?.role === 'admin') {
       fetchBadgeStats();
+      fetchNotifications();
       
-      // Auto-refresh badges every 10 seconds
-      const interval = setInterval(fetchBadgeStats, 10000);
+      const interval = setInterval(() => {
+        fetchBadgeStats();
+        fetchNotifications();
+      }, 10000);
+      
       return () => clearInterval(interval);
     }
   }, [user]);
 
   const fetchBadgeStats = async () => {
     try {
-      // We can reuse getAllResearch to get counts
       const response = await researchAPI.getAllResearch();
       const papers = response.data.papers;
       
-      // Calculate counts based on role needs
       const staffCount = papers.filter(p => p.status === 'pending' || p.status === 'under_review').length;
       const adminCount = papers.filter(p => p.status === 'under_review').length;
       
@@ -54,7 +82,20 @@ const Sidebar = () => {
         adminPending: adminCount
       });
     } catch (error) {
-      console.error('Failed to fetch sidebar stats');
+      console.error('Failed to fetch sidebar stats:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      // Mock notifications for demo
+      const mockNotifications = [
+        { id: 1, type: 'review', message: 'New paper needs review', count: 2 },
+        { id: 2, type: 'update', message: 'System update available', count: 1 }
+      ];
+      setNotifications(mockNotifications);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
     }
   };
 
@@ -63,37 +104,66 @@ const Sidebar = () => {
     navigate('/login');
   };
 
+  const getRoleConfig = (role) => {
+    const configs = {
+      admin: {
+        color: 'from-red-500 to-pink-500',
+        badgeColor: 'bg-red-100 text-red-700 border-red-200',
+        icon: Shield,
+        name: 'Administrator'
+      },
+      staff: {
+        color: 'from-purple-500 to-violet-500',
+        badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
+        icon: Award,
+        name: 'Faculty Staff'
+      },
+      student: {
+        color: 'from-blue-500 to-cyan-500',
+        badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
+        icon: GraduationCap,
+        name: 'Student Scholar'
+      }
+    };
+    return configs[role] || { color: 'from-gray-500 to-slate-500', badgeColor: 'bg-gray-100 text-gray-700', icon: User, name: 'User' };
+  };
+
   const menuConfig = {
     admin: [
       { 
         name: 'Dashboard', 
         icon: LayoutDashboard, 
         path: '/dashboard',
-        badge: null 
+        badge: null,
+        description: 'Overview & Analytics'
       },
       { 
         name: 'User Management', 
-        icon: Users, 
+        icon: UserCog, 
         path: '/admin/users',
-        badge: null 
+        badge: null,
+        description: 'Manage system users'
       },
       { 
         name: 'Research Papers', 
-        icon: FileText, 
+        icon: FileEdit, 
         path: '/admin/papers',
-        badge: stats.adminPending > 0 ? stats.adminPending : null // Dynamic Badge
+        badge: stats.adminPending > 0 ? stats.adminPending : null,
+        description: 'Review & approve papers'
       },
       { 
         name: 'Analytics', 
-        icon: BarChart3, 
+        icon: PieChart, 
         path: '/admin/analytics',
-        badge: null 
+        badge: null,
+        description: 'System insights'
       },
       { 
         name: 'Settings', 
-        icon: Settings, 
+        icon: Settings2, 
         path: '/admin/settings',
-        badge: null 
+        badge: null,
+        description: 'System configuration'
       },
     ],
     staff: [
@@ -101,31 +171,36 @@ const Sidebar = () => {
         name: 'Dashboard', 
         icon: LayoutDashboard, 
         path: '/dashboard',
-        badge: null 
+        badge: null,
+        description: 'Overview'
       },
       { 
         name: 'Review Submissions', 
-        icon: BookOpen, 
+        icon: FileCheck, 
         path: '/staff/review',
-        badge: stats.staffPending > 0 ? stats.staffPending : null // Dynamic Badge
+        badge: stats.staffPending > 0 ? stats.staffPending : null,
+        description: 'Review student papers'
       },
       { 
         name: 'My Research', 
-        icon: FileText, 
+        icon: BookOpen, 
         path: '/staff/my-research',
-        badge: null 
+        badge: null,
+        description: 'Your publications'
       },
       { 
-        name: 'Manage Schedule', 
-        icon: CalendarDays, 
+        name: 'Schedule', 
+        icon: Calendar, 
         path: '/staff/schedule',
-        badge: null 
+        badge: null,
+        description: 'Review schedule'
       },
       { 
         name: 'Settings', 
         icon: Settings, 
         path: '/staff/settings',
-        badge: null 
+        badge: null,
+        description: 'Preferences'
       },
     ],
     student: [
@@ -133,123 +208,178 @@ const Sidebar = () => {
         name: 'Dashboard', 
         icon: LayoutDashboard, 
         path: '/dashboard',
-        badge: null 
+        badge: null,
+        description: 'Overview'
       },
       { 
         name: 'My Research', 
-        icon: BookOpen, 
+        icon: FileText, 
         path: '/student/my-research',
-        badge: null 
+        badge: null,
+        description: 'Your submissions'
       },
       { 
         name: 'Submit Research', 
-        icon: Upload, 
+        icon: PlusCircle, 
         path: '/student/submit',
-        badge: null 
+        badge: null,
+        description: 'Upload new paper'
       },
       { 
         name: 'Browse Repository', 
-        icon: FileSearch, 
+        icon: Search, 
         path: '/student/browse',
-        badge: null 
+        badge: null,
+        description: 'Explore papers'
+      },
+      { 
+        name: 'Profile', 
+        icon: User, 
+        path: '/student/profile',
+        badge: null,
+        description: 'Account settings'
       },
     ]
   };
 
   const menuItems = menuConfig[user?.role] || [];
+  const roleConfig = getRoleConfig(user?.role);
+  const RoleIcon = roleConfig.icon;
 
-  // Get role badge color
-  const getRoleBadgeColor = (role) => {
-    switch(role) {
-      case 'admin':
-        return 'bg-red-100 text-red-700';
-      case 'staff':
-        return 'bg-purple-100 text-purple-700';
-      case 'student':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
+  const totalNotifications = notifications.reduce((sum, notif) => sum + notif.count, 0);
 
   return (
-    <aside className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col sticky top-0 h-screen ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <aside className={`bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700 transition-all duration-300 flex flex-col sticky top-0 h-screen ${isCollapsed ? 'w-20' : 'w-72'}`}>
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100">
+      <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-6'} border-b border-slate-700/50 relative`}>
         {!isCollapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Shield size={18} className="text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-lg">
+              <Library size={24} className="text-white" />
             </div>
-            <span className="font-bold text-indigo-600 text-lg">ResearchHub</span>
+            <div>
+              <div className="font-bold text-white text-lg tracking-tight">ResearchHub</div>
+              <div className="text-xs text-slate-400 font-medium">NU Dasmariñas</div>
+            </div>
           </div>
         )}
+        
         {isCollapsed && (
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mx-auto">
-            <Shield size={18} className="text-white" />
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-lg">
+            <Library size={24} className="text-white" />
           </div>
         )}
+        
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)} 
-          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+          className="absolute -right-3 top-8 w-6 h-6 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center text-white shadow-lg hover:from-indigo-600 hover:to-blue-600 transition-all duration-300 z-10 border-2 border-slate-900"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
+          <ChevronLeft size={14} className={isCollapsed ? '' : 'rotate-180'} />
         </button>
       </div>
 
       {/* User Profile Section */}
       {!isCollapsed && (
-        <div className="px-4 py-4 border-b border-gray-100">
+        <div className="px-5 py-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {user?.fullName?.charAt(0).toUpperCase()}
+            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${roleConfig.color} flex items-center justify-center shadow-lg`}>
+              <RoleIcon size={24} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.fullName}</p>
-              <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getRoleBadgeColor(user?.role)}`}>
-                {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
-              </span>
+              <p className="text-sm font-bold text-white truncate">{user?.fullName || 'User'}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full border ${roleConfig.badgeColor}`}>
+                  {roleConfig.name}
+                </span>
+                {totalNotifications > 0 && (
+                  <span className="relative">
+                    <Bell size={14} className="text-amber-400" />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {totalNotifications}
+                    </span>
+                  </span>
+                )}
+              </div>
             </div>
+          </div>
+          
+          {/* Quick Stats */}
+          {(user?.role === 'staff' || user?.role === 'admin') && (
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold text-white">{stats.staffPending}</div>
+                <div className="text-xs text-slate-400">Pending</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold text-emerald-400">{stats.adminPending}</div>
+                <div className="text-xs text-slate-400">In Review</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isCollapsed && (
+        <div className="px-4 py-6 border-b border-slate-700/50">
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${roleConfig.color} flex items-center justify-center mx-auto`}>
+            <RoleIcon size={20} className="text-white" />
           </div>
         </div>
       )}
 
       {/* Navigation Menu */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname.startsWith(item.path);
+          const Icon = item.icon;
+          
           return (
             <Link 
               key={item.name} 
               to={item.path} 
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative ${
                 isActive 
-                  ? 'bg-indigo-50 text-indigo-600 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-indigo-500/20 to-blue-500/20 border border-indigo-500/30 text-white shadow-lg' 
+                  : 'text-slate-300 hover:bg-slate-800/50 hover:text-white hover:shadow-md'
               }`}
             >
-              <item.icon size={22} className={isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'} />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isActive ? 'bg-gradient-to-br from-indigo-500 to-blue-500' : 'bg-slate-800/50 group-hover:bg-slate-700/50'}`}>
+                <Icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'} />
+              </div>
+              
               {!isCollapsed && (
-                <>
-                  <span className="font-medium text-sm flex-1">{item.name}</span>
-                  {item.badge && (
-                    <span className="px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                </>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">{item.name}</span>
+                    {item.badge && (
+                      <span className="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-400 truncate">{item.description}</div>
+                </div>
               )}
+              
               {isCollapsed && item.badge && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
                   {item.badge}
                 </span>
               )}
+              
               {/* Tooltip for collapsed state */}
               {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                  {item.name}
-                  {item.badge && <span className="ml-1 text-red-400">({item.badge})</span>}
+                <div className="absolute left-full ml-3 px-3 py-2 bg-gradient-to-r from-slate-800 to-slate-900 text-white text-sm rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-2xl border border-slate-700">
+                  <div className="font-medium">{item.name}</div>
+                  {item.description && (
+                    <div className="text-xs text-slate-300 mt-0.5">{item.description}</div>
+                  )}
+                  {item.badge && (
+                    <div className="mt-1 px-2 py-0.5 text-xs bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full inline-block">
+                      {item.badge} pending
+                    </div>
+                  )}
                 </div>
               )}
             </Link>
@@ -257,35 +387,85 @@ const Sidebar = () => {
         })}
       </nav>
 
+      {/* Quick Actions */}
+      {!isCollapsed && (
+        <div className="px-4 py-4 border-t border-slate-700/50">
+          <div className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 rounded-xl p-4 border border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles size={16} className="text-amber-400" />
+              <span className="text-sm font-bold text-white">Quick Actions</span>
+            </div>
+            <div className="space-y-2">
+              {user?.role === 'student' && (
+                <>
+                  <button 
+                    onClick={() => navigate('/student/submit')}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all duration-200"
+                  >
+                    <PlusCircle size={16} />
+                    Submit Paper
+                  </button>
+                  <button 
+                    onClick={() => navigate('/student/browse')}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-slate-300 rounded-lg transition-all duration-200 border border-slate-700"
+                  >
+                    <Search size={16} />
+                    Browse Papers
+                  </button>
+                </>
+              )}
+              {(user?.role === 'staff' || user?.role === 'admin') && (
+                <button 
+                  onClick={() => navigate(user.role === 'staff' ? '/staff/review' : '/admin/papers')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg transition-all duration-200"
+                >
+                  <FileCheck size={16} />
+                  Review Papers
+                  {(stats.staffPending > 0 || stats.adminPending > 0) && (
+                    <span className="ml-auto px-1.5 py-0.5 text-xs bg-white/20 rounded-full">
+                      {user.role === 'staff' ? stats.staffPending : stats.adminPending}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Section */}
-      <div className="border-t border-gray-100">
-        {/* Help Button */}
-        <div className="p-3">
+      <div className="border-t border-slate-700/50">
+        {/* Help & Support */}
+        <div className="p-4">
           <Link
             to="/help"
-            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors group relative`}
+            className={`flex items-center gap-3 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all duration-200 group relative ${isCollapsed ? 'justify-center' : ''}`}
           >
-            <HelpCircle size={20} className="text-gray-400 group-hover:text-gray-600" />
-            {!isCollapsed && <span className="font-medium">Help & Support</span>}
+            <div className="w-10 h-10 rounded-lg bg-slate-800/50 flex items-center justify-center group-hover:bg-slate-700/50">
+              <HelpCircle size={20} />
+            </div>
+            {!isCollapsed && <span className="font-medium">Help Center</span>}
             {isCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                Help & Support
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gradient-to-r from-slate-800 to-slate-900 text-white text-sm rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-2xl border border-slate-700">
+                Help Center
               </div>
             )}
           </Link>
         </div>
 
         {/* Logout Button */}
-        <div className="p-3">
+        <div className="p-4 pt-0">
           <button 
             onClick={handleLogout} 
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors group relative"
+            className={`flex items-center gap-3 px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-gradient-to-r hover:from-red-500/10 hover:to-pink-500/10 rounded-xl transition-all duration-200 group relative w-full ${isCollapsed ? 'justify-center' : ''}`}
           >
-            <LogOut size={20} />
-            {!isCollapsed && <span className="font-medium">Logout</span>}
+            <div className="w-10 h-10 rounded-lg bg-slate-800/50 flex items-center justify-center group-hover:bg-gradient-to-br group-hover:from-red-500/20 group-hover:to-pink-500/20">
+              <LogOut size={20} />
+            </div>
+            {!isCollapsed && <span className="font-medium">Sign Out</span>}
             {isCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                Logout
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gradient-to-r from-slate-800 to-slate-900 text-white text-sm rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-2xl border border-slate-700">
+                Sign Out
               </div>
             )}
           </button>

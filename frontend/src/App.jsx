@@ -15,6 +15,7 @@ import ReviewDetail from './pages/staff/ReviewDetail';
 import AdminReviewSubmissions from './pages/admin/AdminReviewSubmissions';
 
 // NEW IMPORTS
+import Landing from './pages/Landing'; 
 import UserManagement from './pages/admin/UserManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminSettings from './pages/admin/AdminSettings';
@@ -32,8 +33,23 @@ const DashboardLayout = () => {
   );
 };
 
+/**
+ * DashboardRouter handles the landing logic for authenticated users.
+ * It waits for the AuthProvider's loading state to complete before 
+ * deciding whether to show a dashboard or redirect to login.
+ */
 const DashboardRouter = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth(); // Destructure loading to handle page refreshes
+
+  // Fix for reload issue: show loading spinner while checkAuth is running
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <span className="sr-only">Verifying session...</span>
+      </div>
+    );
+  }
 
   if (!user) return <Navigate to="/login" />;
 
@@ -70,15 +86,19 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
+          {/* Landing Page as the default route - Users see this first */}
+          <Route path="/" element={<Landing />} />
+          
+          {/* Public Authentication Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           
+          {/* Protected Routes: Only accessible after login */}
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<DashboardRouter />} />
             
-            {/* Student Routes */}
+            {/* Student Specific Routes */}
             <Route path="/student/my-research" element={
               <ProtectedRoute allowedRoles={['student']}>
                 <MyResearch />
@@ -95,7 +115,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Staff Routes */}
+            {/* Staff Specific Routes */}
             <Route path="/staff/review" element={
               <ProtectedRoute allowedRoles={['staff', 'admin']}>
                 <ReviewSubmissions />
@@ -106,10 +126,9 @@ function App() {
                 <ReviewDetail />
               </ProtectedRoute>
             } />
-            {/* NEW STAFF ROUTES */}
             <Route path="/staff/my-research" element={
               <ProtectedRoute allowedRoles={['staff']}>
-                <MyResearch /> {/* Reusing the component */}
+                <MyResearch />
               </ProtectedRoute>
             } />
             <Route path="/staff/schedule" element={
@@ -123,7 +142,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Admin Routes */}
+            {/* Admin Specific Routes */}
             <Route path="/admin/papers" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminReviewSubmissions />
@@ -134,7 +153,6 @@ function App() {
                 <ReviewDetail />
               </ProtectedRoute>
             } />
-            {/* NEW ADMIN ROUTES */}
             <Route path="/admin/users" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <UserManagement />
@@ -151,6 +169,9 @@ function App() {
               </ProtectedRoute>
             } />
           </Route>
+
+          {/* Fallback redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </Router>
