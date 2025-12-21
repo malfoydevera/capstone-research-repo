@@ -30,4 +30,19 @@ export const authAPI = {
   getCurrentUser: () => api.get('/auth/me'),
 };
 
+// Research endpoints
+export const researchAPI = {
+  submitResearch: (formData) => api.post('/research/submit', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getMyResearch: () => api.get('/research/my/papers'),
+  getAllResearch: (status) => api.get('/research/all/papers', { params: { status } }),
+  getResearchById: (id) => api.get(`/research/${id}`),
+  approveResearch: (id, comments) => api.post(`/research/${id}/approve`, { comments }),
+  rejectResearch: (id, reason) => api.post(`/research/${id}/reject`, { reason }),
+  requestRevision: (id, notes) => api.post(`/research/${id}/revision`, { notes }),
+  getPublishedResearch: (params) => api.get('/research/published', { params }),
+  getCategories: () => api.get('/research/categories'),
+};
+
 export default api;

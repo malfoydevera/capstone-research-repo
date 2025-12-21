@@ -1,77 +1,112 @@
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Welcome, {user?.fullName}</span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.fullName}!</h1>
+        <p className="mt-1 text-sm text-gray-500">System overview and administration.</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Admin Portal</h2>
-            <div className="space-y-4">
-              <div className="border-l-4 border-red-500 pl-4">
-                <p className="text-sm text-gray-600">Role</p>
-                <p className="text-lg font-semibold text-gray-900 capitalize">{user?.role}</p>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <p className="text-sm text-gray-600">Email</p>
-                <p className="text-lg font-semibold text-gray-900">{user?.email}</p>
-              </div>
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Your Profile</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="border-l-4 border-red-500 pl-4">
+            <p className="text-sm text-gray-600">Role</p>
+            <p className="text-lg font-semibold text-gray-900 capitalize">{user?.role}</p>
+          </div>
+          <div className="border-l-4 border-green-500 pl-4">
+            <p className="text-sm text-gray-600">Email</p>
+            <p className="text-lg font-semibold text-gray-900">{user?.email}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Total Users</h3>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <span className="text-2xl font-bold text-blue-600">0</span>
             </div>
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-red-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-red-900 mb-2">User Management</h3>
-                <p className="text-sm text-red-700">Manage users and permissions</p>
-              </div>
-              <div className="bg-yellow-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-yellow-900 mb-2">System Settings</h3>
-                <p className="text-sm text-yellow-700">Configure system parameters</p>
-              </div>
-              <div className="bg-blue-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">Analytics</h3>
-                <p className="text-sm text-blue-700">View system analytics and reports</p>
-              </div>
+          </div>
+          <p className="text-sm text-gray-600">Registered users</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Research Papers</h3>
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <span className="text-2xl font-bold text-purple-600">0</span>
             </div>
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-purple-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-purple-900 mb-2">Research Management</h3>
-                <p className="text-sm text-purple-700">Oversee all research submissions</p>
-              </div>
-              <div className="bg-green-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-green-900 mb-2">Repository</h3>
-                <p className="text-sm text-green-700">Full access to research repository</p>
-              </div>
+          </div>
+          <p className="text-sm text-gray-600">Total submissions</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Pending Reviews</h3>
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <span className="text-2xl font-bold text-yellow-600">0</span>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600">Awaiting approval</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Published</h3>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <span className="text-2xl font-bold text-green-600">0</span>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600">Approved papers</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500 text-center py-8">No recent activity</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Database</span>
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Operational</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">API</span>
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Operational</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Storage</span>
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Operational</span>
             </div>
           </div>
         </div>
-      </main>
+      </div>
+
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-red-900 mb-4">Admin Actions</h3>
+        <div className="flex flex-wrap gap-3">
+          <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            Manage Users
+          </button>
+          <button className="px-4 py-2 bg-white text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors">
+            System Settings
+          </button>
+          <button className="px-4 py-2 bg-white text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors">
+            View Analytics
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
