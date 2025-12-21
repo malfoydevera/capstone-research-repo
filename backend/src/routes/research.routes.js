@@ -1,25 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
+// We don't need multer here anymore for the submit route, 
+// because the file is already in the cloud!
 const researchController = require('../controllers/research.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
-
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    // Accept only PDF files
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'), false);
-    }
-  }
-});
 
 // Public routes
 router.get('/published', researchController.getPublishedResearch);
@@ -33,7 +17,7 @@ router.post(
   '/submit',
   authenticate,
   authorize('student', 'staff', 'admin'),
-  upload.single('file'),
+  // REMOVED: upload.single('file') - We upload on frontend now
   researchController.submitResearch
 );
 
@@ -71,6 +55,13 @@ router.post(
   authenticate,
   authorize('staff', 'admin'),
   researchController.requestRevision
+);
+
+router.put(
+  '/:id/resubmit',
+  authenticate,
+  // We don't need upload middleware here since frontend handles upload
+  researchController.resubmitResearch
 );
 
 module.exports = router;

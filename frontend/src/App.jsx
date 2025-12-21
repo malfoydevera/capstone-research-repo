@@ -1,15 +1,28 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+// Auth Components
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Sidebar from './components/layout/Sidebar';
+
+// Dashboards
 import StudentDashboard from './pages/student/StudentDashboard';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
+
+// Student Pages
 import SubmitResearch from './pages/student/SubmitResearch';
 import MyResearch from './pages/student/MyResearch';
 import BrowseRepository from './pages/student/BrowseRepository';
+import EditResearch from './pages/student/EditResearch'; // <--- NEW IMPORT
+
+// Staff Pages
+import StaffReview from './pages/staff/StaffReview';
+
+// Admin Pages
+import AdminResearchReview from './pages/admin/AdminResearchReview';
 
 const DashboardLayout = () => {
   return (
@@ -60,15 +73,19 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           
+          {/* Protected Routes Wrapper */}
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            
+            {/* Main Dashboard (Redirects based on Role) */}
             <Route path="/dashboard" element={<DashboardRouter />} />
             
-            {/* Student Routes */}
+            {/* --- STUDENT ROUTES --- */}
             <Route path="/student/my-research" element={
               <ProtectedRoute allowedRoles={['student']}>
                 <MyResearch />
@@ -84,20 +101,34 @@ function App() {
                 <BrowseRepository />
               </ProtectedRoute>
             } />
-
-            {/* Staff Routes */}
-            <Route path="/staff/*" element={
-              <ProtectedRoute allowedRoles={['staff']}>
-                <StaffDashboard />
+            {/* NEW EDIT ROUTE */}
+            <Route path="/student/edit/:id" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <EditResearch />
               </ProtectedRoute>
             } />
 
-            {/* Admin Routes */}
-            <Route path="/admin/*" element={
+            {/* --- STAFF ROUTES --- */}
+            <Route path="/staff/review" element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <StaffReview />
+              </ProtectedRoute>
+            } />
+
+            {/* --- ADMIN ROUTES --- */}
+            <Route path="/admin/reviews" element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
+                <AdminResearchReview />
               </ProtectedRoute>
             } />
+            
+            {/* Fallback for Admin Dashboard direct access if needed */}
+            <Route path="/admin/dashboard" element={
+               <ProtectedRoute allowedRoles={['admin']}>
+                 <AdminDashboard />
+               </ProtectedRoute>
+            } />
+
           </Route>
         </Routes>
       </AuthProvider>
