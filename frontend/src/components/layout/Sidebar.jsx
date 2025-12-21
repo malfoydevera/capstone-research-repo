@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { researchAPI } from '../../utils/api'; // Import API
 import { 
   LayoutDashboard, 
   Settings, 
@@ -23,8 +24,39 @@ import {
 const Sidebar = () => {
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [stats, setStats] = useState({ staffPending: 0, adminPending: 0 }); // State for badges
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    // Only fetch stats if user is staff or admin
+    if (user?.role === 'staff' || user?.role === 'admin') {
+      fetchBadgeStats();
+      
+      // Auto-refresh badges every 10 seconds
+      const interval = setInterval(fetchBadgeStats, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchBadgeStats = async () => {
+    try {
+      // We can reuse getAllResearch to get counts
+      const response = await researchAPI.getAllResearch();
+      const papers = response.data.papers;
+      
+      // Calculate counts based on role needs
+      const staffCount = papers.filter(p => p.status === 'pending' || p.status === 'under_review').length;
+      const adminCount = papers.filter(p => p.status === 'under_review').length;
+      
+      setStats({
+        staffPending: staffCount,
+        adminPending: adminCount
+      });
+    } catch (error) {
+      console.error('Failed to fetch sidebar stats');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -49,7 +81,7 @@ const Sidebar = () => {
         name: 'Research Papers', 
         icon: FileText, 
         path: '/admin/papers',
-        badge: '12' 
+        badge: stats.adminPending > 0 ? stats.adminPending : null // Dynamic Badge
       },
       { 
         name: 'Analytics', 
@@ -75,7 +107,7 @@ const Sidebar = () => {
         name: 'Review Submissions', 
         icon: BookOpen, 
         path: '/staff/review',
-        badge: '5' 
+        badge: stats.staffPending > 0 ? stats.staffPending : null // Dynamic Badge
       },
       { 
         name: 'My Research', 

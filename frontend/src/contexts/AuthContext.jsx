@@ -21,13 +21,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
+    // CHANGE: Use sessionStorage
+    const token = sessionStorage.getItem('token');
     if (token) {
       try {
         const response = await authAPI.getCurrentUser();
         setUser(response.data.user);
       } catch (err) {
-        localStorage.removeItem('token');
+        // CHANGE: Use sessionStorage
+        sessionStorage.removeItem('token');
         setUser(null);
       }
     }
@@ -39,7 +41,8 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await authAPI.login({ email, password });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
+      // CHANGE: Use sessionStorage
+      sessionStorage.setItem('token', token);
       setUser(user);
       return { success: true };
     } catch (err) {
@@ -54,7 +57,8 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await authAPI.register({ email, password, fullName, role });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
+      // CHANGE: Use sessionStorage
+      sessionStorage.setItem('token', token);
       setUser(user);
       return { success: true };
     } catch (err) {
@@ -65,7 +69,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    // CHANGE: Use sessionStorage
+    sessionStorage.removeItem('token');
     setUser(null);
   };
 

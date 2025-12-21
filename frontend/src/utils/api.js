@@ -12,7 +12,8 @@ const api = axios.create({
 // Add token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // We switched to sessionStorage in the previous steps for multi-tab support
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,6 +29,9 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getCurrentUser: () => api.get('/auth/me'),
+  // NEW: User Management endpoints
+  getAllUsers: () => api.get('/auth/users'),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`),
 };
 
 // Research endpoints

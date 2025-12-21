@@ -17,6 +17,13 @@ const ReviewSubmissions = () => {
 
   useEffect(() => {
     fetchPapers();
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(() => {
+      fetchPapers();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

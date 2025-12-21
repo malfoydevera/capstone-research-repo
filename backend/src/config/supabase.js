@@ -4,7 +4,8 @@ require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// Use SERVICE_ROLE_KEY if available to bypass RLS for backend operations, otherwise fallback to ANON_KEY
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 // Debugging check to ensure variables are loaded
 if (!supabaseUrl || !supabaseKey) {

@@ -14,6 +14,13 @@ import ReviewSubmissions from './pages/staff/ReviewSubmissions';
 import ReviewDetail from './pages/staff/ReviewDetail';
 import AdminReviewSubmissions from './pages/admin/AdminReviewSubmissions';
 
+// NEW IMPORTS
+import UserManagement from './pages/admin/UserManagement';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminSettings from './pages/admin/AdminSettings';
+import ManageSchedule from './pages/staff/ManageSchedule';
+import StaffSettings from './pages/staff/StaffSettings';
+
 const DashboardLayout = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -99,6 +106,22 @@ function App() {
                 <ReviewDetail />
               </ProtectedRoute>
             } />
+            {/* NEW STAFF ROUTES */}
+            <Route path="/staff/my-research" element={
+              <ProtectedRoute allowedRoles={['staff']}>
+                <MyResearch /> {/* Reusing the component */}
+              </ProtectedRoute>
+            } />
+            <Route path="/staff/schedule" element={
+              <ProtectedRoute allowedRoles={['staff']}>
+                <ManageSchedule />
+              </ProtectedRoute>
+            } />
+            <Route path="/staff/settings" element={
+              <ProtectedRoute allowedRoles={['staff']}>
+                <StaffSettings />
+              </ProtectedRoute>
+            } />
 
             {/* Admin Routes */}
             <Route path="/admin/papers" element={
@@ -109,6 +132,22 @@ function App() {
             <Route path="/admin/review/:id" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <ReviewDetail />
+              </ProtectedRoute>
+            } />
+            {/* NEW ADMIN ROUTES */}
+            <Route path="/admin/users" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <UserManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminAnalytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminSettings />
               </ProtectedRoute>
             } />
           </Route>

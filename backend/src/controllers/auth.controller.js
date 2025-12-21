@@ -2,23 +2,23 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const supabase = require('../config/supabase');
 
+// ... (Keep existing register and login functions exactly as they are) ...
+
 // Register new user
 exports.register = async (req, res) => {
+  // ... (Keep existing code) ...
   try {
     const { email, password, fullName, role } = req.body;
 
-    // Validate input
     if (!email || !password || !fullName || !role) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Validate role
     const validRoles = ['student', 'staff', 'admin'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
-    // Check if user exists
     const { data: existingUser } = await supabase
       .from('users')
       .select('*')
@@ -29,26 +29,21 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user
     const { data: newUser, error } = await supabase
       .from('users')
-      .insert([
-        {
-          email,
-          password: hashedPassword,
-          full_name: fullName,
-          role,
-        },
-      ])
+      .insert([{
+        email,
+        password: hashedPassword,
+        full_name: fullName,
+        role,
+      }])
       .select()
       .single();
 
     if (error) throw error;
 
-    // Generate token
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email, role: newUser.role },
       process.env.JWT_SECRET,
@@ -73,6 +68,7 @@ exports.register = async (req, res) => {
 
 // Login user
 exports.login = async (req, res) => {
+  // ... (Keep existing code) ...
   try {
     const { email, password } = req.body;
 
@@ -80,7 +76,6 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Get user
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
@@ -91,13 +86,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -145,5 +138,46 @@ exports.getCurrentUser = async (req, res) => {
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// NEW: Get All Users (Admin only)
+exports.getAllUsers = async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, email, full_name, role, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ users });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// NEW: Delete User (Admin only)
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Prevent deleting yourself
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 };

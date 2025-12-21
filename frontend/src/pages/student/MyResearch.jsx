@@ -10,7 +10,16 @@ const MyResearch = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Initial fetch
     fetchMyResearch();
+
+    // Set up polling interval for real-time updates (every 5 seconds)
+    const interval = setInterval(() => {
+      fetchMyResearch();
+    }, 5000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   const fetchMyResearch = async () => {
@@ -18,8 +27,11 @@ const MyResearch = () => {
       const response = await researchAPI.getMyResearch();
       setPapers(response.data.papers);
     } catch (err) {
-      setError('Failed to load research papers');
-      console.error(err);
+      // Only set error on initial load to avoid flashing errors during polling
+      if (loading) {
+        setError('Failed to load research papers');
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
