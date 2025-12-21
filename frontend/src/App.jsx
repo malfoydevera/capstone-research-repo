@@ -10,6 +10,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SubmitResearch from './pages/student/SubmitResearch';
 import MyResearch from './pages/student/MyResearch';
 import BrowseRepository from './pages/student/BrowseRepository';
+import ReviewSubmissions from './pages/staff/ReviewSubmissions';
+import ReviewDetail from './pages/staff/ReviewDetail';
+import AdminReviewSubmissions from './pages/admin/AdminReviewSubmissions';
 
 const DashboardLayout = () => {
   return (
@@ -75,7 +78,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/student/submit" element={
-              <ProtectedRoute allowedRoles={['student']}>
+              <ProtectedRoute allowedRoles={['student', 'staff', 'admin']}>
                 <SubmitResearch />
               </ProtectedRoute>
             } />
@@ -86,16 +89,26 @@ function App() {
             } />
 
             {/* Staff Routes */}
-            <Route path="/staff/*" element={
-              <ProtectedRoute allowedRoles={['staff']}>
-                <StaffDashboard />
+            <Route path="/staff/review" element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <ReviewSubmissions />
+              </ProtectedRoute>
+            } />
+            <Route path="/staff/review/:id" element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <ReviewDetail />
               </ProtectedRoute>
             } />
 
             {/* Admin Routes */}
-            <Route path="/admin/*" element={
+            <Route path="/admin/papers" element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
+                <AdminReviewSubmissions />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/review/:id" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ReviewDetail />
               </ProtectedRoute>
             } />
           </Route>

@@ -62,6 +62,13 @@ exports.submitResearch = async (req, res) => {
       return res.status(500).json({ error: 'Failed to save research data' });
     }
 
+    // Get author details
+    const { data: author } = await supabase
+      .from('users')
+      .select('full_name, email')
+      .eq('id', userId)
+      .single();
+
     // Create notifications for all staff
     const { data: staffUsers } = await supabase
       .from('users')
@@ -74,7 +81,7 @@ exports.submitResearch = async (req, res) => {
         research_id: research.id,
         type: 'submission',
         title: 'New Research Submission',
-        message: `${req.user.email} submitted "${title}" for review`
+        message: `${author?.full_name || author?.email} submitted "${title}" for review`
       }));
 
       await supabase.from('notifications').insert(notifications);
@@ -119,7 +126,8 @@ exports.getAllResearch = async (req, res) => {
       .from('research_papers')
       .select(`
         *,
-        users:author_id (
+        author:users!author_id (
+          id,
           full_name,
           email
         )
@@ -134,7 +142,13 @@ exports.getAllResearch = async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ papers });
+    // Transform the data to match expected format
+    const transformedPapers = papers.map(paper => ({
+      ...paper,
+      users: paper.author
+    }));
+
+    res.json({ papers: transformedPapers });
   } catch (error) {
     console.error('Get all research error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -150,7 +164,8 @@ exports.getResearchById = async (req, res) => {
       .from('research_papers')
       .select(`
         *,
-        users:author_id (
+        author:users!author_id (
+          id,
           full_name,
           email
         )
@@ -168,7 +183,13 @@ exports.getResearchById = async (req, res) => {
       .update({ view_count: paper.view_count + 1 })
       .eq('id', id);
 
-    res.json({ paper });
+    // Transform the data to match expected format
+    const transformedPaper = {
+      ...paper,
+      users: paper.author
+    };
+
+    res.json({ paper: transformedPaper });
   } catch (error) {
     console.error('Get research error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -386,7 +407,8 @@ exports.getPublishedResearch = async (req, res) => {
       .from('research_papers')
       .select(`
         *,
-        users:author_id (
+        author:users!author_id (
+          id,
           full_name,
           email
         )
@@ -406,7 +428,13 @@ exports.getPublishedResearch = async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ papers });
+    // Transform the data to match expected format
+    const transformedPapers = papers.map(paper => ({
+      ...paper,
+      users: paper.author
+    }));
+
+    res.json({ papers: transformedPapers });
   } catch (error) {
     console.error('Get published research error:', error);
     res.status(500).json({ error: 'Server error' });
