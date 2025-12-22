@@ -22,6 +22,9 @@ import AdminSettings from './pages/admin/AdminSettings';
 import ManageSchedule from './pages/staff/ManageSchedule';
 import StaffSettings from './pages/staff/StaffSettings';
 
+// NEW IMPORT for Research Detail View
+import ResearchDetail from './pages/student/ResearchDetail';
+
 const DashboardLayout = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -112,6 +115,13 @@ function App() {
             <Route path="/student/browse" element={
               <ProtectedRoute allowedRoles={['student', 'staff', 'admin']}>
                 <BrowseRepository />
+              </ProtectedRoute>
+            } />
+            
+            {/* Research Detail View - Accessible to all authenticated users */}
+            <Route path="/research/:id" element={
+              <ProtectedRoute allowedRoles={['student', 'staff', 'admin']}>
+                <ResearchDetail />
               </ProtectedRoute>
             } />
 

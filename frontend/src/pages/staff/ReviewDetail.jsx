@@ -10,28 +10,19 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle, 
-  MessageSquare,
   Shield,
   BookOpen,
   Tag,
   Users,
   Mail,
-  GraduationCap,
   Clock,
   FileCheck,
-  Edit,
-  Sparkles,
-  Award,
-  BarChart3,
-  ChevronRight,
-  Star,
   Lightbulb,
   ShieldCheck,
-  Bookmark,
-  Copy,
-  Printer,
-  Share2,
-  Eye  // Added this import
+  BarChart3,
+  ChevronRight,
+  Eye,
+  Maximize2 // Added for the preview header
 } from 'lucide-react';
 import { researchAPI } from '../../utils/api';
 
@@ -47,7 +38,6 @@ const ReviewDetail = () => {
   const [comments, setComments] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
-  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchPaperDetail();
@@ -69,7 +59,6 @@ const ReviewDetail = () => {
       alert('Please provide approval comments');
       return;
     }
-
     setActionLoading(true);
     try {
       await researchAPI.approveResearch(id, comments);
@@ -88,7 +77,6 @@ const ReviewDetail = () => {
       alert('Please provide a rejection reason');
       return;
     }
-
     setActionLoading(true);
     try {
       await researchAPI.rejectResearch(id, rejectionReason);
@@ -107,7 +95,6 @@ const ReviewDetail = () => {
       alert('Please provide revision notes');
       return;
     }
-
     setActionLoading(true);
     try {
       await researchAPI.requestRevision(id, revisionNotes);
@@ -124,52 +111,32 @@ const ReviewDetail = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
     return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+      month: 'short', day: 'numeric', year: 'numeric'
     });
   };
 
   const getStatusConfig = (status) => {
     const configs = {
       pending: {
-        color: 'from-yellow-500 to-amber-500',
         badgeColor: 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border-yellow-200',
-        icon: Clock,
-        label: 'Pending Review'
+        icon: Clock, label: 'Pending Review'
       },
       under_review: {
-        color: 'from-blue-500 to-cyan-500',
         badgeColor: 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200',
-        icon: Eye,  // Now Eye is properly imported
-        label: 'Under Review'
+        icon: Eye, label: 'Under Review'
       },
       approved: {
-        color: 'from-green-500 to-emerald-500',
         badgeColor: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
-        icon: CheckCircle,
-        label: 'Approved'
+        icon: CheckCircle, label: 'Approved'
       },
       rejected: {
-        color: 'from-red-500 to-pink-500',
         badgeColor: 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border-red-200',
-        icon: XCircle,
-        label: 'Rejected'
+        icon: XCircle, label: 'Rejected'
       },
       revision_required: {
-        color: 'from-orange-500 to-amber-500',
         badgeColor: 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border-orange-200',
-        icon: AlertCircle,
-        label: 'Revision Required'
+        icon: AlertCircle, label: 'Revision Required'
       }
     };
     return configs[status] || configs.pending;
@@ -190,25 +157,13 @@ const ReviewDetail = () => {
   if (!paper) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <button
-          onClick={() => navigate('/staff/review')}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 to-white border border-slate-300 text-slate-700 hover:border-indigo-300 transition-colors mb-8"
-        >
-          <ArrowLeft size={18} />
-          Back to Review Queue
+        <button onClick={() => navigate('/staff/review')} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 to-white border border-slate-300 text-slate-700 hover:border-indigo-300 transition-colors mb-8">
+          <ArrowLeft size={18} /> Back to Review Queue
         </button>
         <div className="text-center py-16">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-100 to-white flex items-center justify-center mx-auto mb-6">
-            <FileText size={40} className="text-slate-400" />
-          </div>
+          <FileText size={40} className="text-slate-400 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-slate-900 mb-3">Research paper not found</h2>
-          <p className="text-slate-600 mb-8">The requested research paper could not be loaded.</p>
-          <button
-            onClick={() => navigate('/staff/review')}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-blue-700 transition-all duration-300"
-          >
-            Return to Review Queue
-          </button>
+          <button onClick={() => navigate('/staff/review')} className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold">Return to Review Queue</button>
         </div>
       </div>
     );
@@ -221,113 +176,67 @@ const ReviewDetail = () => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <button
-          onClick={() => navigate('/staff/review')}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 to-white border border-slate-300 text-slate-700 hover:border-indigo-300 transition-colors mb-6 group"
-        >
+        <button onClick={() => navigate('/staff/review')} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 to-white border border-slate-300 text-slate-700 hover:border-indigo-300 transition-colors mb-6 group">
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           Back to Review Queue
         </button>
 
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg">
-                <FileCheck size={28} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
-                  Review <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">Submission</span>
-                </h1>
-                <div className="flex items-center gap-4">
-                  <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${statusConfig.badgeColor} border`}>
-                    <StatusIcon size={14} />
-                    {statusConfig.label}
-                  </span>
-                  <span className="text-sm text-slate-600 font-medium">
-                    Submitted {formatDate(paper.submission_date || paper.created_at)}
-                  </span>
-                </div>
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg">
+              <FileCheck size={28} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 mb-2">Review <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">Submission</span></h1>
+              <div className="flex items-center gap-4">
+                <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${statusConfig.badgeColor} border`}>
+                  <StatusIcon size={14} /> {statusConfig.label}
+                </span>
+                <span className="text-sm text-slate-600 font-medium">Submitted {formatDate(paper.submission_date || paper.created_at)}</span>
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:block">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                <Shield size={16} className="text-indigo-600" />
-                <span className="text-sm font-semibold text-slate-700">Academic Review</span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
+            <Shield size={16} className="text-indigo-600" />
+            <span className="text-sm font-semibold text-slate-700">Academic Review</span>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Paper Details */}
+        {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Paper Card */}
           <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="px-8 py-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center">
-                  <BookOpen size={20} className="text-indigo-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Research Details</h2>
-                  <p className="text-slate-600 text-sm">Complete submission information</p>
-                </div>
+            <div className="px-8 py-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center gap-3">
+              <BookOpen size={20} className="text-indigo-600" />
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Research Details</h2>
+                <p className="text-slate-600 text-sm">Full submission and document preview</p>
               </div>
             </div>
 
             <div className="p-8">
-              {/* Title */}
               <h3 className="text-2xl font-bold text-slate-900 mb-6">{paper.title}</h3>
 
-              {/* Author Info */}
+              {/* Author and Timeline info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center flex-shrink-0">
-                    <User size={20} className="text-blue-600" />
-                  </div>
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-200">
+                  <User size={20} className="text-blue-600 mt-1" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 mb-1">Primary Author</p>
+                    <p className="text-sm font-semibold text-slate-900">Primary Author</p>
                     <p className="text-lg font-bold text-slate-900">{paper.users?.full_name || 'Researcher'}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Mail size={14} className="text-slate-500" />
-                      <span className="text-sm text-slate-600">{paper.users?.email || 'Email not available'}</span>
-                    </div>
+                    <p className="text-sm text-slate-600">{paper.users?.email}</p>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center flex-shrink-0">
-                    <Calendar size={20} className="text-purple-600" />
-                  </div>
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-200">
+                  <Calendar size={20} className="text-purple-600 mt-1" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 mb-1">Submission Timeline</p>
+                    <p className="text-sm font-semibold text-slate-900">Submission Date</p>
                     <p className="text-lg font-bold text-slate-900">{formatDate(paper.submission_date || paper.created_at)}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock size={14} className="text-slate-500" />
-                      <span className="text-sm text-slate-600">Submitted recently</span>
-                    </div>
+                    <p className="text-sm text-slate-600">Initial Submission</p>
                   </div>
                 </div>
               </div>
-
-              {/* Co-Authors */}
-              {paper.co_authors && (
-                <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users size={18} className="text-indigo-600" />
-                    <h4 className="text-lg font-bold text-slate-900">Co-Authors</h4>
-                  </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-                    <p className="text-slate-700">{paper.co_authors}</p>
-                  </div>
-                </div>
-              )}
 
               {/* Abstract */}
               <div className="mb-8">
@@ -335,268 +244,122 @@ const ReviewDetail = () => {
                   <FileText size={18} className="text-indigo-600" />
                   <h4 className="text-lg font-bold text-slate-900">Abstract</h4>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
                   <p className="text-slate-700 whitespace-pre-line leading-relaxed">{paper.abstract}</p>
                 </div>
               </div>
 
+              {/* PDF PREVIEW SECTION */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Maximize2 size={18} className="text-indigo-600" />
+                    <h4 className="text-lg font-bold text-slate-900">Document Preview</h4>
+                  </div>
+                  <div className="flex gap-3">
+                    <a href={paper.file_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                      <ExternalLink size={14} /> Full Screen
+                    </a>
+                  </div>
+                </div>
+                <div className="rounded-2xl border-2 border-slate-200 overflow-hidden bg-slate-100 shadow-inner">
+                  {paper.file_url ? (
+                    <iframe
+                      src={`${paper.file_url}#toolbar=0&navpanes=0`}
+                      width="100%"
+                      height="650px"
+                      title="Research PDF Preview"
+                      className="w-full border-none"
+                    />
+                  ) : (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-slate-400 gap-2">
+                      <XCircle size={40} />
+                      <p>Preview not available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Keywords */}
-              {paper.keywords && paper.keywords.length > 0 && (
+              {paper.keywords?.length > 0 && (
                 <div className="mb-8">
                   <div className="flex items-center gap-2 mb-3">
                     <Tag size={18} className="text-indigo-600" />
                     <h4 className="text-lg font-bold text-slate-900">Keywords</h4>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {paper.keywords.map((keyword, index) => (
-                      <span
-                        key={index}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 text-sm font-medium border border-indigo-200"
-                      >
-                        {keyword}
-                      </span>
+                    {paper.keywords.map((kw, i) => (
+                      <span key={i} className="px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-sm font-medium border border-indigo-100">{kw}</span>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* File Actions */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText size={18} className="text-indigo-600" />
-                  <h4 className="text-lg font-bold text-slate-900">Research Document</h4>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center">
-                      <FileText size={20} className="text-red-600" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900">{paper.file_name}</p>
-                      <p className="text-sm text-slate-600">PDF Document</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <a
-                      href={paper.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 to-white border border-slate-300 text-slate-700 hover:border-indigo-300 transition-colors flex items-center gap-2"
-                    >
-                      <ExternalLink size={16} />
-                      Preview
-                    </a>
-                    <a
-                      href={paper.file_url}
-                      download
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700 transition-all duration-300 flex items-center gap-2"
-                    >
-                      <Download size={16} />
-                      Download
-                    </a>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column - Actions & Info */}
+        {/* Right Column */}
         <div className="space-y-8">
-          {/* Review Actions */}
-          {(paper.status === 'pending' || paper.status === 'under_review') && (
-            <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-              <div className="px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center">
-                    <FileCheck size={20} className="text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900">Review Actions</h3>
-                    <p className="text-slate-600 text-sm">Make your decision</p>
-                  </div>
-                </div>
+          {/* Action Buttons */}
+          {(paper.status === 'pending' || paper.status === 'under_review' || paper.status === 'revision_required') && (
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                <FileCheck size={20} className="text-indigo-600" />
+                <h3 className="font-bold text-slate-900">Review Actions</h3>
               </div>
-              
-              <div className="p-6">
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowApproveModal(true)}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-xl group"
-                  >
-                    <CheckCircle size={20} />
-                    Approve Research
-                    <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </button>
-
-                  <button
-                    onClick={() => setShowRevisionModal(true)}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-xl group"
-                  >
-                    <AlertCircle size={20} />
-                    Request Revision
-                    <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </button>
-
-                  <button
-                    onClick={() => setShowRejectModal(true)}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:from-red-700 hover:to-pink-700 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-xl group"
-                  >
-                    <XCircle size={20} />
-                    Reject Paper
-                    <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-slate-200">
-                  <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-                    <Lightbulb size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-blue-900 mb-1">Review Guidelines</p>
-                      <p className="text-sm text-blue-700">
-                        Provide constructive feedback to help students improve their research.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="p-6 space-y-4">
+                <button onClick={() => setShowApproveModal(true)} className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all font-bold shadow-lg">
+                  <CheckCircle size={20} /> Approve Research
+                </button>
+                <button onClick={() => setShowRevisionModal(true)} className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-all font-bold shadow-lg">
+                  <AlertCircle size={20} /> Request Revision
+                </button>
+                <button onClick={() => setShowRejectModal(true)} className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all font-bold shadow-lg">
+                  <XCircle size={20} /> Reject Paper
+                </button>
               </div>
             </div>
           )}
 
-          {/* Review Timeline */}
-          <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center">
-                  <Clock size={20} className="text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Review Timeline</h3>
-                  <p className="text-slate-600 text-sm">Submission progress</p>
-                </div>
-              </div>
+          {/* Timeline & Stats */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <Clock size={20} className="text-purple-600" />
+              <h3 className="font-bold text-slate-900">Submission Info</h3>
             </div>
-            
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Submitted</p>
-                    <p className="text-sm text-slate-600">{formatDate(paper.submission_date || paper.created_at)}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className={`w-8 h-8 rounded-full ${paper.status === 'pending' || paper.status === 'under_review' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-slate-300 to-slate-400'} flex items-center justify-center flex-shrink-0`}>
-                    <FileCheck size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Under Review</p>
-                    <p className="text-sm text-slate-600">Faculty evaluation in progress</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className={`w-8 h-8 rounded-full ${paper.status === 'approved' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-slate-300 to-slate-400'} flex items-center justify-center flex-shrink-0`}>
-                    <ShieldCheck size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Final Decision</p>
-                    <p className="text-sm text-slate-600">Awaiting review completion</p>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">View Count</span>
+                <span className="font-bold text-slate-900">{paper.view_count || 0}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center">
-                  <BarChart3 size={20} className="text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Quick Stats</h3>
-                  <p className="text-slate-600 text-sm">Submission metrics</p>
-                </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Downloads</span>
+                <span className="font-bold text-slate-900">{paper.download_count || 0}</span>
               </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="text-2xl font-black text-slate-900">1</div>
-                  <div className="text-sm text-slate-600 font-medium">Author</div>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="text-2xl font-black text-slate-900">{paper.keywords?.length || 0}</div>
-                  <div className="text-sm text-slate-600 font-medium">Keywords</div>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="text-2xl font-black text-slate-900">0</div>
-                  <div className="text-sm text-slate-600 font-medium">Downloads</div>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-200">
-                  <div className="text-2xl font-black text-slate-900">0</div>
-                  <div className="text-sm text-slate-600 font-medium">Views</div>
-                </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">File Size</span>
+                <span className="font-bold text-slate-900">{(paper.file_size / 1024 / 1024).toFixed(2)} MB</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals remain the same as previous logic */}
       {/* Approve Modal */}
       {showApproveModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-            <div className="px-6 py-4 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
-                  <CheckCircle size={20} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Approve Research</h3>
-                  <p className="text-slate-600 text-sm">Approve this research paper</p>
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border">
+            <div className="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-3">
+              <CheckCircle size={20} className="text-emerald-600" />
+              <h3 className="text-xl font-bold text-slate-900">Approve Research</h3>
             </div>
             <div className="p-6">
-              <p className="text-slate-700 mb-4">
-                Please provide your approval comments. These will be shared with the author.
-              </p>
-              <textarea
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                placeholder="Enter your approval comments (required)..."
-                rows={4}
-                className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-medium mb-4"
-                required
-              />
+              <textarea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Enter approval comments..." rows={4} className="w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none mb-4" />
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowApproveModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors"
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApprove}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-bold hover:from-emerald-700 hover:to-green-700 transition-all duration-300 disabled:opacity-50"
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Approving...
-                    </div>
-                  ) : 'Approve Research'}
+                <button onClick={() => setShowApproveModal(false)} className="flex-1 py-3 border rounded-xl font-medium">Cancel</button>
+                <button onClick={handleApprove} disabled={actionLoading} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold">
+                  {actionLoading ? 'Processing...' : 'Approve'}
                 </button>
               </div>
             </div>
@@ -606,50 +369,18 @@ const ReviewDetail = () => {
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-            <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-pink-50 border-b border-red-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center">
-                  <XCircle size={20} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Reject Research</h3>
-                  <p className="text-slate-600 text-sm">Reject this research paper</p>
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border">
+            <div className="px-6 py-4 bg-red-50 border-b border-red-100 flex items-center gap-3">
+              <XCircle size={20} className="text-red-600" />
+              <h3 className="text-xl font-bold text-slate-900">Reject Research</h3>
             </div>
             <div className="p-6">
-              <p className="text-slate-700 mb-4">
-                Please provide a detailed reason for rejection. This will be shared with the author.
-              </p>
-              <textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Enter rejection reason (required)..."
-                rows={4}
-                className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300 font-medium mb-4"
-                required
-              />
+              <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Enter rejection reason..." rows={4} className="w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-red-500 outline-none mb-4" />
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowRejectModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors"
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReject}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-bold hover:from-red-700 hover:to-pink-700 transition-all duration-300 disabled:opacity-50"
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Rejecting...
-                    </div>
-                  ) : 'Reject Paper'}
+                <button onClick={() => setShowRejectModal(false)} className="flex-1 py-3 border rounded-xl font-medium">Cancel</button>
+                <button onClick={handleReject} disabled={actionLoading} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold">
+                  {actionLoading ? 'Processing...' : 'Reject'}
                 </button>
               </div>
             </div>
@@ -659,50 +390,18 @@ const ReviewDetail = () => {
 
       {/* Revision Modal */}
       {showRevisionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-            <div className="px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                  <AlertCircle size={20} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Request Revision</h3>
-                  <p className="text-slate-600 text-sm">Request revisions for this paper</p>
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border">
+            <div className="px-6 py-4 bg-amber-50 border-b border-amber-100 flex items-center gap-3">
+              <AlertCircle size={20} className="text-amber-600" />
+              <h3 className="text-xl font-bold text-slate-900">Request Revision</h3>
             </div>
             <div className="p-6">
-              <p className="text-slate-700 mb-4">
-                Provide specific revision notes to help the author improve their research.
-              </p>
-              <textarea
-                value={revisionNotes}
-                onChange={(e) => setRevisionNotes(e.target.value)}
-                placeholder="Enter revision notes (required)..."
-                rows={4}
-                className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300 font-medium mb-4"
-                required
-              />
+              <textarea value={revisionNotes} onChange={(e) => setRevisionNotes(e.target.value)} placeholder="Enter revision notes..." rows={4} className="w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none mb-4" />
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowRevisionModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors"
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRequestRevision}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-bold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 disabled:opacity-50"
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Sending...
-                    </div>
-                  ) : 'Request Revision'}
+                <button onClick={() => setShowRevisionModal(false)} className="flex-1 py-3 border rounded-xl font-medium">Cancel</button>
+                <button onClick={handleRequestRevision} disabled={actionLoading} className="flex-1 py-3 bg-amber-600 text-white rounded-xl font-bold">
+                  {actionLoading ? 'Processing...' : 'Request'}
                 </button>
               </div>
             </div>

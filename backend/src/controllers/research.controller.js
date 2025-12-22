@@ -4,12 +4,10 @@ const { v4: uuidv4 } = require('uuid');
 // Submit new research or update existing revision
 exports.submitResearch = async (req, res) => {
   try {
-    // 1. Capture 'id' from req.body to detect if this is an update/revision
     const { id, title, abstract, keywords, coAuthors, category } = req.body;
     const file = req.file;
     const userId = req.user.id;
 
-    // Validation: File is required for new submissions
     if (!id && !file) {
       return res.status(400).json({ error: 'Research file is required' });
     }
@@ -20,7 +18,6 @@ exports.submitResearch = async (req, res) => {
 
     let fileData = {};
 
-    // 2. Upload new file if one was provided
     if (file) {
       const fileExt = file.originalname.split('.').pop();
       const fileName = `${userId}/${uuidv4()}.${fileExt}`;
@@ -29,7 +26,7 @@ exports.submitResearch = async (req, res) => {
         .from('research-papers')
         .upload(fileName, file.buffer, {
           contentType: file.mimetype,
-          upsert: true // Allow overwriting if a specific path is reused
+          upsert: true 
         });
 
       if (uploadError) {
@@ -48,20 +45,18 @@ exports.submitResearch = async (req, res) => {
       };
     }
 
-    // 3. Use .upsert() to update existing record or insert new one
-    // If 'id' is present, Supabase updates that record; otherwise it inserts
     const { data: research, error: dbError } = await supabase
       .from('research_papers')
       .upsert({
-        ...(id && { id }), // Include id only if it's an update
+        ...(id && { id }), 
         title,
         abstract,
         keywords: keywords ? keywords.split(',').map(k => k.trim()) : [],
         co_authors: coAuthors || null,
         category,
         author_id: userId,
-        status: 'pending', // Reset status to pending upon submission/revision
-        ...fileData // Spread new file info if a file was uploaded
+        status: 'pending', 
+        ...fileData 
       })
       .select()
       .single();
@@ -71,7 +66,6 @@ exports.submitResearch = async (req, res) => {
       return res.status(500).json({ error: 'Failed to save research data' });
     }
 
-    // 4. Notification logic (consistent with original)
     const { data: author } = await supabase
       .from('users')
       .select('full_name, email')
@@ -109,7 +103,6 @@ exports.submitResearch = async (req, res) => {
 exports.getMyResearch = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const { data: papers, error } = await supabase
       .from('research_papers')
       .select('*')
@@ -117,7 +110,6 @@ exports.getMyResearch = async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-
     res.json({ papers });
   } catch (error) {
     console.error('Get my research error:', error);
@@ -129,32 +121,17 @@ exports.getMyResearch = async (req, res) => {
 exports.getAllResearch = async (req, res) => {
   try {
     const { status } = req.query;
-
     let query = supabase
       .from('research_papers')
-      .select(`
-        *,
-        author:users!author_id (
-          id,
-          full_name,
-          email
-        )
-      `)
+      .select(`*, author:users!author_id (id, full_name, email)`)
       .order('submission_date', { ascending: false });
 
-    if (status) {
-      query = query.eq('status', status);
-    }
+    if (status) query = query.eq('status', status);
 
     const { data: papers, error } = await query;
-
     if (error) throw error;
 
-    const transformedPapers = papers.map(paper => ({
-      ...paper,
-      users: paper.author
-    }));
-
+    const transformedPapers = papers.map(paper => ({ ...paper, users: paper.author }));
     res.json({ papers: transformedPapers });
   } catch (error) {
     console.error('Get all research error:', error);
@@ -166,17 +143,9 @@ exports.getAllResearch = async (req, res) => {
 exports.getResearchById = async (req, res) => {
   try {
     const { id } = req.params;
-
     const { data: paper, error } = await supabase
       .from('research_papers')
-      .select(`
-        *,
-        author:users!author_id (
-          id,
-          full_name,
-          email
-        )
-      `)
+      .select(`*, author:users!author_id (id, full_name, email)`)
       .eq('id', id)
       .single();
 
@@ -184,20 +153,191 @@ exports.getResearchById = async (req, res) => {
       return res.status(404).json({ error: 'Research paper not found' });
     }
 
-    await supabase
-      .from('research_papers')
-      .update({ view_count: (paper.view_count || 0) + 1 })
-      .eq('id', id);
+    // FIXED: Treat the RPC call as a Promise properly before chaining
+    supabase.rpc('increment_view_count', { row_id: id })
+      .then(({ error: rpcError }) => {
+        if (rpcError) console.error('Auto-track view error:', rpcError);
+        else console.log(`View count incremented for paper ${id}`);
+      })
+      .catch(err => console.error('Unexpected error during view tracking:', err));
 
-    const transformedPaper = {
-      ...paper,
-      users: paper.author
-    };
-
+    const transformedPaper = { ...paper, users: paper.author };
     res.json({ paper: transformedPaper });
   } catch (error) {
     console.error('Get research error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Track research view (Explicit tracking for paper_views table)
+exports.trackView = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Use await to ensure the RPC call completes before moving forward
+    const { error: updateError } = await supabase.rpc('increment_view_count', { row_id: id });
+    if (updateError) throw updateError;
+
+    // Insert into detailed tracking table
+    await supabase
+      .from('paper_views')
+      .insert({
+        paper_id: id,
+        user_id: userId,
+        viewed_at: new Date().toISOString()
+      });
+
+    res.json({ success: true, message: 'View tracked successfully' });
+  } catch (error) {
+    console.error('Error tracking view:', error);
+    res.status(500).json({ error: 'Failed to track view' });
+  }
+};
+
+// Track research download
+exports.trackDownload = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Use await for incrementing
+    const { error: updateError } = await supabase.rpc('increment_download_count', { row_id: id });
+    if (updateError) throw updateError;
+
+    // Insert into detailed tracking table
+    await supabase
+      .from('paper_downloads')
+      .insert({
+        paper_id: id,
+        user_id: userId,
+        downloaded_at: new Date().toISOString()
+      });
+
+    res.json({ success: true, message: 'Download tracked successfully' });
+  } catch (error) {
+    console.error('Error tracking download:', error);
+    res.status(500).json({ error: 'Failed to track download' });
+  }
+};
+
+// Admin: Get all research with full details
+exports.adminGetAllResearch = async (req, res) => {
+  try {
+    const { data: papers, error } = await supabase
+      .from('research_papers')
+      .select(`*, author:users!author_id (id, full_name, email, role), reviews:approval_workflow(*)`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const transformedPapers = papers.map(paper => ({ ...paper, users: paper.author }));
+    res.json({ success: true, papers: transformedPapers });
+  } catch (error) {
+    console.error('Admin fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch research data' });
+  }
+};
+
+// Admin: Update research
+exports.adminUpdateResearch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const { data: updatedPaper, error: updateError } = await supabase
+      .from('research_papers')
+      .update(updateData)
+      .eq('id', id)
+      .select(`*, author:users!author_id (id, full_name, email)`)
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({ 
+      success: true, 
+      paper: { ...updatedPaper, users: updatedPaper.author },
+      message: 'Research updated successfully' 
+    });
+  } catch (error) {
+    console.error('Admin update error:', error);
+    res.status(500).json({ error: 'Failed to update research' });
+  }
+};
+
+// Admin: Delete research
+exports.adminDeleteResearch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Deletions are handled by ON DELETE CASCADE in your SQL schema
+    const { error: deleteError } = await supabase
+      .from('research_papers')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
+
+    res.json({ success: true, message: 'Research deleted successfully' });
+  } catch (error) {
+    console.error('Admin delete error:', error);
+    res.status(500).json({ error: 'Failed to delete research' });
+  }
+};
+
+// Admin: Publish research
+exports.adminPublishResearch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: publishedPaper, error: updateError } = await supabase
+      .from('research_papers')
+      .update({ 
+        status: 'published',
+        is_published: true,
+        published_date: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select(`*, author:users!author_id (id, full_name, email)`)
+      .single();
+
+    if (updateError) throw updateError;
+
+    await supabase.from('notifications').insert([{
+      user_id: publishedPaper.author_id,
+      research_id: id,
+      type: 'publication',
+      title: 'Research Published',
+      message: `Congratulations! Your research "${publishedPaper.title}" is now available.`
+    }]);
+
+    res.json({ success: true, paper: { ...publishedPaper, users: publishedPaper.author } });
+  } catch (error) {
+    console.error('Publish error:', error);
+    res.status(500).json({ error: 'Failed to publish research' });
+  }
+};
+
+// Admin: Unpublish research
+exports.adminUnpublishResearch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: unpublishedPaper, error: updateError } = await supabase
+      .from('research_papers')
+      .update({ 
+        status: 'approved',
+        is_published: false,
+        published_date: null
+      })
+      .eq('id', id)
+      .select(`*, author:users!author_id (id, full_name, email)`)
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true, paper: { ...unpublishedPaper, users: unpublishedPaper.author } });
+  } catch (error) {
+    console.error('Unpublish error:', error);
+    res.status(500).json({ error: 'Failed to unpublish research' });
   }
 };
 
@@ -211,70 +351,37 @@ exports.approveResearch = async (req, res) => {
 
     const { data: paper, error: fetchError } = await supabase
       .from('research_papers')
-      .select('*, users:author_id(full_name, email)')
+      .select('*, author:users!author_id(full_name, email)')
       .eq('id', id)
       .single();
 
-    if (fetchError || !paper) {
-      return res.status(404).json({ error: 'Research paper not found' });
-    }
+    if (fetchError || !paper) return res.status(404).json({ error: 'Research paper not found' });
 
     let newStatus;
-    let notificationMessage;
-
     if (reviewerRole === 'staff' && paper.status === 'pending') {
       newStatus = 'under_review';
-      notificationMessage = 'Your research has been approved by staff and is now under admin review';
     } else if (reviewerRole === 'admin' && paper.status === 'under_review') {
       newStatus = 'approved';
-      notificationMessage = 'Congratulations! Your research has been approved and published';
     } else {
       return res.status(400).json({ error: 'Invalid approval workflow' });
     }
 
-    const { error: updateError } = await supabase
-      .from('research_papers')
-      .update({ 
-        status: newStatus,
-        published_date: newStatus === 'approved' ? new Date().toISOString() : null
-      })
-      .eq('id', id);
-
-    if (updateError) throw updateError;
+    await supabase.from('research_papers').update({ 
+      status: newStatus,
+      published_date: newStatus === 'approved' ? new Date().toISOString() : null
+    }).eq('id', id);
 
     await supabase.from('approval_workflow').insert([{
-      research_id: id,
-      reviewer_id: reviewerId,
-      reviewer_role: reviewerRole,
-      status: 'approved',
-      comments: comments || null
+      research_id: id, reviewer_id: reviewerId, reviewer_role: reviewerRole, status: 'approved', comments: comments || null
     }]);
 
     await supabase.from('notifications').insert([{
-      user_id: paper.author_id,
-      research_id: id,
-      type: 'approval',
-      title: 'Research Approved',
-      message: notificationMessage
+      user_id: paper.author_id, research_id: id, type: 'approval', title: 'Research Approved', message: `Your research status is now: ${newStatus}`
     }]);
-
-    if (newStatus === 'under_review') {
-      const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
-      if (admins && admins.length > 0) {
-        const adminNotifications = admins.map(admin => ({
-          user_id: admin.id,
-          research_id: id,
-          type: 'submission',
-          title: 'Research Ready for Final Approval',
-          message: `"${paper.title}" has been reviewed by staff and needs your approval`
-        }));
-        await supabase.from('notifications').insert(adminNotifications);
-      }
-    }
 
     res.json({ message: 'Research approved successfully', status: newStatus });
   } catch (error) {
-    console.error('Approve research error:', error);
+    console.error('Approve error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -284,27 +391,17 @@ exports.rejectResearch = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const reviewerId = req.user.id;
-    const reviewerRole = req.user.role;
-
     if (!reason) return res.status(400).json({ error: 'Rejection reason is required' });
 
     const { data: paper } = await supabase.from('research_papers').select('author_id, title').eq('id', id).single();
-    if (!paper) return res.status(404).json({ error: 'Research paper not found' });
-
+    
     await supabase.from('research_papers').update({ status: 'rejected', rejection_reason: reason }).eq('id', id);
-
     await supabase.from('approval_workflow').insert([{
-      research_id: id, reviewer_id: reviewerId, reviewer_role: reviewerRole, status: 'rejected', comments: reason
-    }]);
-
-    await supabase.from('notifications').insert([{
-      user_id: paper.author_id, research_id: id, type: 'rejection', title: 'Research Rejected', message: `Your research "${paper.title}" has been rejected. Reason: ${reason}`
+      research_id: id, reviewer_id: req.user.id, reviewer_role: req.user.role, status: 'rejected', comments: reason
     }]);
 
     res.json({ message: 'Research rejected' });
   } catch (error) {
-    console.error('Reject research error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -314,27 +411,15 @@ exports.requestRevision = async (req, res) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
-    const reviewerId = req.user.id;
-    const reviewerRole = req.user.role;
-
     if (!notes) return res.status(400).json({ error: 'Revision notes are required' });
 
-    const { data: paper } = await supabase.from('research_papers').select('author_id, title').eq('id', id).single();
-    if (!paper) return res.status(404).json({ error: 'Research paper not found' });
-
     await supabase.from('research_papers').update({ status: 'revision_required', revision_notes: notes }).eq('id', id);
-
     await supabase.from('approval_workflow').insert([{
-      research_id: id, reviewer_id: reviewerId, reviewer_role: reviewerRole, status: 'revision_required', comments: notes
-    }]);
-
-    await supabase.from('notifications').insert([{
-      user_id: paper.author_id, research_id: id, type: 'revision', title: 'Revision Required', message: `Your research "${paper.title}" requires revision. Notes: ${notes}`
+      research_id: id, reviewer_id: req.user.id, reviewer_role: req.user.role, status: 'revision_required', comments: notes
     }]);
 
     res.json({ message: 'Revision requested' });
   } catch (error) {
-    console.error('Request revision error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -354,7 +439,6 @@ exports.getPublishedResearch = async (req, res) => {
     const transformedPapers = papers.map(paper => ({ ...paper, users: paper.author }));
     res.json({ papers: transformedPapers });
   } catch (error) {
-    console.error('Get published research error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -366,7 +450,6 @@ exports.getCategories = async (req, res) => {
     if (error) throw error;
     res.json({ categories });
   } catch (error) {
-    console.error('Get categories error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

@@ -29,7 +29,7 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getCurrentUser: () => api.get('/auth/me'),
-  // NEW: User Management endpoints
+  // User Management endpoints
   getAllUsers: () => api.get('/auth/users'),
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
 };
@@ -47,6 +47,25 @@ export const researchAPI = {
   requestRevision: (id, notes) => api.post(`/research/${id}/revision`, { notes }),
   getPublishedResearch: (params) => api.get('/research/published', { params }),
   getCategories: () => api.get('/research/categories'),
+  
+  // NEW: Tracking endpoints for view and download
+  trackView: (id) => api.post(`/research/${id}/view`),
+  trackDownload: (id) => api.post(`/research/${id}/download`),
+  
+  // NEW: Admin research management endpoints
+  adminGetAllResearch: () => api.get('/research/admin/all'),
+  adminUpdateResearch: (id, data) => api.put(`/research/admin/${id}`, data),
+  adminDeleteResearch: (id) => api.delete(`/research/admin/${id}`),
+  adminPublishResearch: (id) => api.post(`/research/admin/${id}/publish`),
+  adminUnpublishResearch: (id) => api.post(`/research/admin/${id}/unpublish`),
+};
+
+// Analytics endpoints
+export const analyticsAPI = {
+  getSystemStats: () => api.get('/analytics/stats'),
+  getDownloadStats: (period) => api.get('/analytics/downloads', { params: { period } }),
+  getUserActivity: (period) => api.get('/analytics/activity', { params: { period } }),
+  getCategoryStats: () => api.get('/analytics/categories'),
 };
 
 export default api;

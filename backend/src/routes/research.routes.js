@@ -12,7 +12,6 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept only PDF files
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
@@ -21,14 +20,16 @@ const upload = multer({
   }
 });
 
-// Public routes
+// ========== PUBLIC ROUTES ==========
 router.get('/published', researchController.getPublishedResearch);
 router.get('/categories', researchController.getCategories);
 
-// Protected routes - All authenticated users
+// ========== AUTHENTICATED USER ROUTES ==========
 router.get('/:id', authenticate, researchController.getResearchById);
+router.post('/:id/view', authenticate, researchController.trackView);
+router.post('/:id/download', authenticate, researchController.trackDownload);
 
-// Student routes
+// ========== STUDENT/STAFF/ADMIN ROUTES ==========
 router.post(
   '/submit',
   authenticate,
@@ -44,7 +45,7 @@ router.get(
   researchController.getMyResearch
 );
 
-// Staff and Admin routes
+// ========== STAFF & ADMIN ROUTES ==========
 router.get(
   '/all/papers',
   authenticate,
@@ -71,6 +72,42 @@ router.post(
   authenticate,
   authorize('staff', 'admin'),
   researchController.requestRevision
+);
+
+// ========== ADMIN ONLY ROUTES ==========
+router.get(
+  '/admin/all',
+  authenticate,
+  authorize('admin'),
+  researchController.adminGetAllResearch
+);
+
+router.put(
+  '/admin/:id',
+  authenticate,
+  authorize('admin'),
+  researchController.adminUpdateResearch
+);
+
+router.delete(
+  '/admin/:id',
+  authenticate,
+  authorize('admin'),
+  researchController.adminDeleteResearch
+);
+
+router.post(
+  '/admin/:id/publish',
+  authenticate,
+  authorize('admin'),
+  researchController.adminPublishResearch
+);
+
+router.post(
+  '/admin/:id/unpublish',
+  authenticate,
+  authorize('admin'),
+  researchController.adminUnpublishResearch
 );
 
 module.exports = router;
