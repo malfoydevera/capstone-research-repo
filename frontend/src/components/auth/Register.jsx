@@ -25,6 +25,7 @@ const Register = () => {
     confirmPassword: '',
     fullName: '',
     role: 'student',
+    program: 'BSIT', // CHANGE 1: Initialize program with default
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -56,11 +57,13 @@ const Register = () => {
 
     setLoading(true);
 
+    // CHANGE 2: Pass program to register function
     const result = await register(
       formData.email,
       formData.password,
       formData.fullName,
-      formData.role
+      formData.role,
+      formData.program 
     );
 
     setLoading(false);
@@ -263,6 +266,51 @@ const Register = () => {
                     onChange={handleChange}
                   />
                 </div>
+
+                {/* CHANGE 3: Program Selection (Visible only for Students) */}
+                {formData.role === 'student' && (
+                  <div className="space-y-2 animate-fadeIn transition-all duration-300">
+                    <label className="block text-sm font-semibold text-slate-700">
+                      <div className="flex items-center gap-2 mb-1">
+                        <GraduationCap size={16} className="text-indigo-600" />
+                        Program
+                      </div>
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className={`relative flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        formData.program === 'BSIT' 
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm' 
+                          : 'border-slate-200 hover:border-indigo-200'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="program"
+                          value="BSIT"
+                          checked={formData.program === 'BSIT'}
+                          onChange={handleChange}
+                          className="absolute opacity-0"
+                        />
+                        <span className="font-bold">BSIT</span>
+                      </label>
+                      
+                      <label className={`relative flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        formData.program === 'BSCS' 
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm' 
+                          : 'border-slate-200 hover:border-indigo-200'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="program"
+                          value="BSCS"
+                          checked={formData.program === 'BSCS'}
+                          onChange={handleChange}
+                          className="absolute opacity-0"
+                        />
+                        <span className="font-bold">BSCS</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
 
                 {/* Password Field */}
                 <div className="space-y-3 transition-all duration-300">

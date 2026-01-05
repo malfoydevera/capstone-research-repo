@@ -52,12 +52,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password, fullName, role) => {
+  const register = async (email, password, fullName, role, program) => {
     try {
       setError(null);
-      const response = await authAPI.register({ email, password, fullName, role });
+      // Pass 'program' into the object sent to the API
+      const response = await authAPI.register({ email, password, fullName, role, program });
       const { token, user } = response.data;
-      // CHANGE: Use sessionStorage
       sessionStorage.setItem('token', token);
       setUser(user);
       return { success: true };

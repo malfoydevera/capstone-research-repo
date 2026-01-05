@@ -453,3 +453,75 @@ exports.getCategories = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.register = async (req, res) => {
+  try {
+    // 1. Accept 'program' from the request body
+    const { email, password, fullName, role, program } = req.body;
+
+    if (!email || !password || !fullName || !role) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const validRoles = ['student', 'staff', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // 2. Validate Program if the user is a Student
+    if (role === 'student') {
+        const validPrograms = ['BSIT', 'BSCS'];
+        if (!program || !validPrograms.includes(program)) {
+            return res.status(400).json({ error: 'Valid program (BSIT or BSCS) is required for students' });
+        }
+    }
+
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 3. Save the 'program' to the database
+    const { data: newUser, error } = await supabase
+      .from('users')
+      .insert([{
+        email,
+        password: hashedPassword,
+        full_name: fullName,
+        role,
+        program: role === 'student' ? program : null // Only students need a program
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        fullName: newUser.full_name,
+        role: newUser.role,
+        program: newUser.program, // Return the program info
+      },
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

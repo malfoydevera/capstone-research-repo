@@ -144,10 +144,21 @@ exports.getCurrentUser = async (req, res) => {
 // NEW: Get All Users (Admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    const { data: users, error } = await supabase
+    // 1. Check if a role filter was provided in the URL (e.g., ?role=staff)
+    const { role } = req.query;
+
+    // 2. Start the query
+    let query = supabase
       .from('users')
-      .select('id, email, full_name, role, created_at')
+      .select('id, email, full_name, role, program, created_at') // ADDED: 'program'
       .order('created_at', { ascending: false });
+
+    // 3. Apply filter if a role is requested
+    if (role) {
+      query = query.eq('role', role);
+    }
+
+    const { data: users, error } = await query;
 
     if (error) throw error;
 

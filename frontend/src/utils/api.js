@@ -29,8 +29,10 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getCurrentUser: () => api.get('/auth/me'),
-  // User Management endpoints
-  getAllUsers: () => api.get('/auth/users'),
+  
+  // UPDATED: Now accepts an optional 'role' parameter for filtering
+  getAllUsers: (role) => api.get('/auth/users', { params: { role } }),
+  
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
 };
 
